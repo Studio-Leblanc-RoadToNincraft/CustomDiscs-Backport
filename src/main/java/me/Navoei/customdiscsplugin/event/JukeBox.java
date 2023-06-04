@@ -160,7 +160,7 @@ public class JukeBox implements Listener{
     public void onJukeboxExplode(EntityExplodeEvent event) {
 
         for (Block explodedBlock : event.blockList()) {
-            if (explodedBlock.getType() != Material.JUKEBOX) return;
+            if (explodedBlock.getType() != Material.JUKEBOX) {
                 stopDisc(explodedBlock);
                 Jukebox jukebox = (Jukebox) explodedBlock.getState();
                 jukebox.removeMetadata("customdiscs", customDiscs);
