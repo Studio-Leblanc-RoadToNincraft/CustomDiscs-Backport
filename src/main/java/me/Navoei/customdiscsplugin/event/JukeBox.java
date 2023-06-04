@@ -1,7 +1,9 @@
 package me.Navoei.customdiscsplugin.event;
 
+import de.tr7zw.nbtapi.NBT;
+import de.tr7zw.nbtapi.NBTCompound;
+import de.tr7zw.nbtapi.iface.ReadWriteNBT;
 import me.Navoei.customdiscsplugin.CustomDiscs;
-import me.Navoei.customdiscsplugin.ParticleManager;
 import me.Navoei.customdiscsplugin.PlayerManager;
 import me.Navoei.customdiscsplugin.VoicePlugin;
 import net.kyori.adventure.text.Component;
@@ -10,7 +12,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.block.Jukebox;
 import org.bukkit.entity.Player;
@@ -22,12 +23,13 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class JukeBox implements Listener{
 
@@ -44,28 +46,57 @@ public class JukeBox implements Listener{
         if (event.getClickedBlock().getType() != Material.JUKEBOX) return;
 
         if (isCustomMusicDisc(event) && !jukeboxContainsDisc(block)) {
+            Jukebox jukebox = (Jukebox) block.getState();
 
-            String soundFileName = event.getItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(customDiscs, "customdisc"), PersistentDataType.STRING);
 
-            Path soundFilePath = Path.of(customDiscs.getDataFolder().getPath(), "musicdata", soundFileName);
+            NBT.modify(event.getItem(), nbt -> {
+                ReadWriteNBT customDiscNBT = nbt.getCompound("customdiscs");
 
-            if (soundFilePath.toFile().exists()) {
+                String soundFileName = customDiscNBT.getString("file");
+                System.out.println(soundFileName);
 
-                Component songNameComponent = Objects.requireNonNull(event.getItem().getItemMeta().lore()).get(0).asComponent();
-                String songName = PlainTextComponentSerializer.plainText().serialize(songNameComponent);
+                if(soundFileName == null) return;
 
-                TextComponent customActionBarSongPlaying = Component.text()
-                        .content("Now Playing: " + songName)
-                        .color(NamedTextColor.GOLD)
-                        .build();
+                Path soundFilePath = Paths.get(customDiscs.getDataFolder().getPath(), "musicdata", soundFileName);
+                System.out.println(soundFilePath);
 
-                assert VoicePlugin.voicechatServerApi != null;
-                playerManager.playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, block, customActionBarSongPlaying.asComponent());
-            } else {
-                player.sendMessage(ChatColor.RED + "Sound file not found.");
-                event.setCancelled(true);
-                throw new FileNotFoundException("Sound file is missing!");
-            }
+                if (soundFilePath.toFile().exists()) {
+
+                    String soundName = Objects.requireNonNull(event.getItem().getItemMeta().getLore()).get(0);
+                    Component songNameComponent = Component.text()
+                            .content(soundName)
+                            .color(NamedTextColor.GOLD)
+                            .build();
+
+                    String songName = PlainTextComponentSerializer.plainText().serialize(songNameComponent);
+
+                    TextComponent customActionBarSongPlaying = Component.text()
+                            .content("Now Playing: " + songName)
+                            .color(NamedTextColor.GOLD)
+                            .build();
+
+                    assert VoicePlugin.voicechatServerApi != null;
+
+                    /*NBT.modify(event.getClickedBlock().getState(), data -> {
+                        System.out.println("Jukebox NBT: " + data.toString());
+                        ReadWriteNBT jukeboxNBT = data.getOrCreateCompound("customdiscs");
+                        System.out.println("1");
+                        jukeboxNBT.setString("file", soundFileName);
+
+                        System.out.println("Jukebox NBT: " + jukeboxNBT.toString());
+                    });*/
+
+                    playerManager.playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, block, customActionBarSongPlaying.asComponent());
+                } else {
+                    player.sendMessage(ChatColor.RED + "Sound file not found.");
+                    event.setCancelled(true);
+                    try {
+                        throw new FileNotFoundException("Sound file is missing!");
+                    } catch (FileNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
         }
     }
 
@@ -124,30 +155,31 @@ public class JukeBox implements Listener{
 
     public boolean jukeboxContainsDisc(Block b) {
         Jukebox jukebox = (Jukebox) b.getLocation().getBlock().getState();
-        return jukebox.getRecord().getType() != Material.AIR;
+        return jukebox.getPlaying() != Material.AIR;
     }
 
     public boolean isCustomMusicDisc(PlayerInteractEvent e) {
 
         if (e.getItem()==null) return false;
 
-        return e.getItem().getItemMeta().getPersistentDataContainer().has(new NamespacedKey(customDiscs, "customdisc")) &&
+        AtomicBoolean isCustomDisc = new AtomicBoolean(false);
+
+        NBT.modify(e.getItem(), nbt -> {
+            isCustomDisc.set(nbt.hasTag("customdiscs"));
+        });
+
+        return isCustomDisc.get() &&
                 (
-                        e.getItem().getType().equals(Material.MUSIC_DISC_13) ||
-                                e.getItem().getType().equals(Material.MUSIC_DISC_CAT) ||
-                                e.getItem().getType().equals(Material.MUSIC_DISC_BLOCKS) ||
-                                e.getItem().getType().equals(Material.MUSIC_DISC_CHIRP) ||
-                                e.getItem().getType().equals(Material.MUSIC_DISC_FAR) ||
-                                e.getItem().getType().equals(Material.MUSIC_DISC_MALL) ||
-                                e.getItem().getType().equals(Material.MUSIC_DISC_MELLOHI) ||
-                                e.getItem().getType().equals(Material.MUSIC_DISC_STAL) ||
-                                e.getItem().getType().equals(Material.MUSIC_DISC_STRAD) ||
-                                e.getItem().getType().equals(Material.MUSIC_DISC_WARD) ||
-                                e.getItem().getType().equals(Material.MUSIC_DISC_11) ||
-                                e.getItem().getType().equals(Material.MUSIC_DISC_WAIT) ||
-                                e.getItem().getType().equals(Material.MUSIC_DISC_OTHERSIDE) ||
-                                e.getItem().getType().equals(Material.MUSIC_DISC_5) ||
-                                e.getItem().getType().equals(Material.MUSIC_DISC_PIGSTEP)
+                        e.getItem().getType().equals(Material.RECORD_3) ||
+                                e.getItem().getType().equals(Material.RECORD_4) ||
+                                e.getItem().getType().equals(Material.RECORD_5) ||
+                                e.getItem().getType().equals(Material.RECORD_6) ||
+                                e.getItem().getType().equals(Material.RECORD_7) ||
+                                e.getItem().getType().equals(Material.RECORD_8) ||
+                                e.getItem().getType().equals(Material.RECORD_9) ||
+                                e.getItem().getType().equals(Material.RECORD_10) ||
+                                e.getItem().getType().equals(Material.RECORD_11) ||
+                                e.getItem().getType().equals(Material.RECORD_12)
                 );
     }
 

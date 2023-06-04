@@ -2,16 +2,20 @@ package me.Navoei.customdiscsplugin.command.SubCommands;
 
 import me.Navoei.customdiscsplugin.CustomDiscs;
 import me.Navoei.customdiscsplugin.command.SubCommand;
+import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
-import org.codehaus.plexus.util.FileUtils;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+
 
 public class DownloadCommand extends SubCommand {
 
@@ -64,7 +68,7 @@ public class DownloadCommand extends SubCommand {
                 }
 
                 player.sendMessage(ChatColor.GRAY + "Downloading file...");
-                Path downloadPath = Path.of(customDiscs.getDataFolder().getPath(), "musicdata", filename);
+                Path downloadPath = Paths.get(customDiscs.getDataFolder().getPath(), "musicdata", filename);
                 File downloadFile = new File(downloadPath.toUri());
 
                 URLConnection connection = fileURL.openConnection();
@@ -77,8 +81,14 @@ public class DownloadCommand extends SubCommand {
                     }
                 }
 
-                FileUtils.copyURLToFile(fileURL, downloadFile);
-
+                try(BufferedInputStream in = new BufferedInputStream(fileURL.openStream())) {
+                    FileOutputStream fileOutputStream = new FileOutputStream(downloadFile);
+                    byte[] dataBuffer = new byte[1024];
+                    int bytesRead;
+                    while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                        fileOutputStream.write(dataBuffer, 0, bytesRead);
+                    }
+                }
                 player.sendMessage(ChatColor.GREEN + "File successfully downloaded to " + ChatColor.GRAY + "plugins/CustomDiscs/musicdata/"+ filename + ChatColor.GREEN + " .");
                 player.sendMessage(ChatColor.GREEN + "Create a disc by doing " + ChatColor.GRAY + "/cd create "+filename+" \"Custom Lore\" " + ChatColor.GREEN + ".");
             } catch (IOException e) {

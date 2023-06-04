@@ -1,5 +1,7 @@
 package me.Navoei.customdiscsplugin;
 
+import de.tr7zw.nbtapi.NBT;
+import de.tr7zw.nbtapi.iface.ReadWriteNBT;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -18,7 +20,6 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
 
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -33,11 +34,17 @@ public class HopperManager implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onJukeboxInsertFromHopper(InventoryMoveItemEvent event) {
 
+        // TODO: Fix this
+        /*
         if (event.getDestination().getLocation() == null) return;
         if (!event.getDestination().getType().equals(InventoryType.JUKEBOX)) return;
         if (!isCustomMusicDisc(event.getItem())) return;
 
-        Component songNameComponent = Objects.requireNonNull(event.getItem().getItemMeta().lore()).get(0).asComponent();
+        String songNameLore = Objects.requireNonNull(event.getItem().getItemMeta().getLore()).get(0);
+        Component songNameComponent = Component.text()
+                .content(songNameLore)
+                .color(NamedTextColor.GOLD)
+                .build();
         String songName = PlainTextComponentSerializer.plainText().serialize(songNameComponent);
 
         TextComponent customActionBarSongPlaying = Component.text()
@@ -45,23 +52,27 @@ public class HopperManager implements Listener {
                 .color(NamedTextColor.GOLD)
                 .build();
 
-        String soundFileName = event.getItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(customDiscs, "customdisc"), PersistentDataType.STRING);
+        // NBT get string
+        ReadWriteNBT nbt = NBT.itemStackToNBT(event.getItem());
+        String soundFileName = nbt.getString("customdisc");
+
+        if (soundFileName == null) return;
 
         Path soundFilePath = Path.of(customDiscs.getDataFolder().getPath(), "musicdata", soundFileName);
         assert VoicePlugin.voicechatServerApi != null;
-        playerManager.playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, event.getDestination().getLocation().getBlock(), customActionBarSongPlaying.asComponent());
-
+        playerManager.playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, event.getDestination().getLocation().getBlock(), customActionBarSongPlaying.asComponent());*/
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onJukeboxEjectToHopper(InventoryMoveItemEvent event) {
 
-        if (event.getSource().getLocation() == null) return;
+        // TODO - Fix this
+        /*if (event.getSource().getLocation() == null) return;
         if (!event.getSource().getType().equals(InventoryType.JUKEBOX)) return;
         if (event.getItem().getItemMeta() == null) return;
         if (!isCustomMusicDisc(event.getItem())) return;
 
-        event.setCancelled(playerManager.isAudioPlayerPlaying(event.getSource().getLocation()));
+        event.setCancelled(playerManager.isAudioPlayerPlaying(event.getSource().getLocation()));*/
 
     }
 
@@ -77,24 +88,27 @@ public class HopperManager implements Listener {
 
         Jukebox jukebox = (Jukebox) block.getState();
 
-        InventoryMoveItemEvent event = new InventoryMoveItemEvent(jukebox.getInventory(), jukebox.getRecord(), hopper.getInventory(), false);
+        // TODO - Fix this
+
+        /*InventoryMoveItemEvent event = new InventoryMoveItemEvent(jukebox.getInventory(), jukebox.getRecord(), hopper.getInventory(), false);
         Bukkit.getPluginManager().callEvent(event);
 
         if (!event.isCancelled()) {
             if (!Arrays.toString(hopper.getInventory().getContents()).contains("null")) return;
 
-            hopper.getInventory().setItem(hopper.getInventory().firstEmpty(), jukebox.getRecord());
+            hopper.getInventory().setItem(hopper.getInventory().firstEmpty(), new ItemStack(jukebox.getPlaying()));
 
             block.setType(Material.AIR);
             block.setType(Material.JUKEBOX);
-        }
+        }*/
 
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onChunkLoad(ChunkLoadEvent event) {
         for (BlockState blockState : event.getChunk().getTileEntities()) {
-            if (blockState instanceof Jukebox jukebox) {
+            if (blockState instanceof Jukebox) {
+                Jukebox jukebox = (Jukebox) blockState;
                 if (!PlayerManager.instance().isAudioPlayerPlaying(blockState.getLocation()) && !jukebox.isPlaying()) {
                     discToHopper(blockState.getBlock());
                 }
@@ -104,22 +118,18 @@ public class HopperManager implements Listener {
 
     private boolean isCustomMusicDisc (ItemStack item) {
 
-        return item.getItemMeta().getPersistentDataContainer().has(new NamespacedKey(customDiscs, "customdisc"), PersistentDataType.STRING) && (
-                        item.getType().equals(Material.MUSIC_DISC_13) ||
-                        item.getType().equals(Material.MUSIC_DISC_CAT) ||
-                        item.getType().equals(Material.MUSIC_DISC_BLOCKS) ||
-                        item.getType().equals(Material.MUSIC_DISC_CHIRP) ||
-                        item.getType().equals(Material.MUSIC_DISC_FAR) ||
-                        item.getType().equals(Material.MUSIC_DISC_MALL) ||
-                        item.getType().equals(Material.MUSIC_DISC_MELLOHI) ||
-                        item.getType().equals(Material.MUSIC_DISC_STAL) ||
-                        item.getType().equals(Material.MUSIC_DISC_STRAD) ||
-                        item.getType().equals(Material.MUSIC_DISC_WARD) ||
-                        item.getType().equals(Material.MUSIC_DISC_11) ||
-                        item.getType().equals(Material.MUSIC_DISC_WAIT) ||
-                        item.getType().equals(Material.MUSIC_DISC_OTHERSIDE) ||
-                        item.getType().equals(Material.MUSIC_DISC_5) ||
-                        item.getType().equals(Material.MUSIC_DISC_PIGSTEP)
+        ReadWriteNBT nbt = NBT.itemStackToNBT(item);
+        return nbt.hasTag("customdisc") && (
+                        item.getType().equals(Material.RECORD_3) ||
+                        item.getType().equals(Material.RECORD_4) ||
+                        item.getType().equals(Material.RECORD_5) ||
+                        item.getType().equals(Material.RECORD_6) ||
+                        item.getType().equals(Material.RECORD_7) ||
+                        item.getType().equals(Material.RECORD_8) ||
+                        item.getType().equals(Material.RECORD_9) ||
+                        item.getType().equals(Material.RECORD_10) ||
+                        item.getType().equals(Material.RECORD_11) ||
+                        item.getType().equals(Material.RECORD_12)
                 );
     }
 

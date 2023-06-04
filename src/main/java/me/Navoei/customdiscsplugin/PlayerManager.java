@@ -1,5 +1,6 @@
 package me.Navoei.customdiscsplugin;
 
+import com.google.common.io.ByteStreams;
 import de.maxhenkel.voicechat.api.ServerPlayer;
 import de.maxhenkel.voicechat.api.VoicechatServerApi;
 import de.maxhenkel.voicechat.api.audiochannel.AudioChannel;
@@ -8,6 +9,7 @@ import de.maxhenkel.voicechat.api.audiochannel.LocationalAudioChannel;
 import javazoom.spi.mpeg.sampled.convert.MpegFormatConversionProvider;
 import javazoom.spi.mpeg.sampled.file.MpegAudioFileReader;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -18,6 +20,7 @@ import org.jflac.sound.spi.FlacAudioFileReader;
 
 import javax.annotation.Nullable;
 import javax.sound.sampled.*;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -74,7 +77,7 @@ public class PlayerManager {
 
             for (ServerPlayer serverPlayer : playersInRange) {
                 Player bukkitPlayer = (Player) serverPlayer.getPlayer();
-                bukkitPlayer.sendActionBar(actionbarComponent);
+                bukkitPlayer.sendActionBar(LegacyComponentSerializer.legacySection().serialize(actionbarComponent));
             }
 
             if (audioPlayer == null) {
@@ -145,7 +148,9 @@ public class PlayerManager {
 
         assert finalInputStream != null;
 
-        return adjustVolume(finalInputStream.readAllBytes(), CustomDiscs.getInstance().musicDiscVolume);
+        byte[] bytes = ByteStreams.toByteArray(finalInputStream);
+
+        return adjustVolume(bytes, CustomDiscs.getInstance().musicDiscVolume);
     }
 
     private static byte[] adjustVolume(byte[] audioSamples, double volume) {

@@ -1,20 +1,23 @@
 package me.Navoei.customdiscsplugin.command.SubCommands;
 
+import de.tr7zw.nbtapi.NBT;
+import de.tr7zw.nbtapi.NBTCompound;
+import de.tr7zw.nbtapi.iface.ReadWriteItemNBT;
+import de.tr7zw.nbtapi.iface.ReadWriteNBT;
+import de.tr7zw.nbtapi.iface.ReadWriteNBTCompoundList;
 import me.Navoei.customdiscsplugin.CustomDiscs;
 import me.Navoei.customdiscsplugin.command.SubCommand;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -80,20 +83,24 @@ public class CreateCommand extends SubCommand {
                 //Sets the lore of the item to the quotes from the command.
                 ItemStack disc = new ItemStack(player.getInventory().getItemInMainHand());
                 ItemMeta meta = disc.getItemMeta();
-                @Nullable List<Component> itemLore = new ArrayList<>();
+                @Nullable List<String> itemLore = new ArrayList<>();
                 final TextComponent customLoreSong = Component.text()
                         .decoration(TextDecoration.ITALIC, false)
                         .content(customName(readQuotes(args)))
                         .color(NamedTextColor.GRAY)
                         .build();
-                itemLore.add(customLoreSong);
+                itemLore.add(PlainTextComponentSerializer.plainText().serialize(customLoreSong));
                 meta.addItemFlags(ItemFlag.values());
-                meta.lore(itemLore);
+                meta.setLore(itemLore);
+                disc.setItemMeta(meta);
 
-                PersistentDataContainer data = meta.getPersistentDataContainer();
-                data.set(new NamespacedKey(CustomDiscs.getInstance(), "customdisc"), PersistentDataType.STRING, filename);
+                NBT.modify(disc, nbt -> {
+                    ReadWriteNBT customdiscs = nbt.getOrCreateCompound("customdiscs");
+                    customdiscs.setString("file", filename);
+                });
 
-                player.getInventory().getItemInMainHand().setItemMeta(meta);
+
+                player.getInventory().setItemInMainHand(disc);
 
                 player.sendMessage("Your filename is: " + ChatColor.GRAY + songname);
                 player.sendMessage("Your custom name is: " + ChatColor.GRAY + customName(readQuotes(args)));
@@ -143,15 +150,14 @@ public class CreateCommand extends SubCommand {
     }
 
     private String customName(ArrayList<String> q) {
-
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
 
         for (String s : q) {
             sb.append(s);
             sb.append(" ");
         }
 
-        if (sb.isEmpty()) {
+        if (sb.length() == 0) {
             return sb.toString();
         } else {
             return sb.toString().substring(0, sb.length()-1);
@@ -159,22 +165,16 @@ public class CreateCommand extends SubCommand {
     }
 
     private boolean isMusicDisc(Player p) {
-
-        return p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_13) ||
-                p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_CAT) ||
-                p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_BLOCKS) ||
-                p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_CHIRP) ||
-                p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_FAR) ||
-                p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_MALL) ||
-                p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_MELLOHI) ||
-                p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_STAL) ||
-                p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_STRAD) ||
-                p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_WARD) ||
-                p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_11) ||
-                p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_WAIT) ||
-                p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_OTHERSIDE) ||
-                p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_5) ||
-                p.getInventory().getItemInMainHand().getType().equals(Material.MUSIC_DISC_PIGSTEP);
+        return p.getInventory().getItemInMainHand().getType().equals(Material.RECORD_3) ||
+                p.getInventory().getItemInMainHand().getType().equals(Material.RECORD_4) ||
+                p.getInventory().getItemInMainHand().getType().equals(Material.RECORD_5) ||
+                p.getInventory().getItemInMainHand().getType().equals(Material.RECORD_6) ||
+                p.getInventory().getItemInMainHand().getType().equals(Material.RECORD_7) ||
+                p.getInventory().getItemInMainHand().getType().equals(Material.RECORD_8) ||
+                p.getInventory().getItemInMainHand().getType().equals(Material.RECORD_9) ||
+                p.getInventory().getItemInMainHand().getType().equals(Material.RECORD_10) ||
+                p.getInventory().getItemInMainHand().getType().equals(Material.RECORD_11) ||
+                p.getInventory().getItemInMainHand().getType().equals(Material.RECORD_12);
     }
 
 }

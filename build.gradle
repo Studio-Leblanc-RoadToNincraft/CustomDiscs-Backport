@@ -36,11 +36,26 @@ dependencies {
     // implementation "org.bukkit:craftbukkit:${bukkit_version}"
 
     // Use this dependency if you don't want to compile bukkit
-    implementation "io.papermc.paper:paper-api:${bukkit_version}"
+
+    implementation "net.kyori:adventure-api:4.13.1"
+    shadow "net.kyori:adventure-api:4.13.1"
+
+    implementation "net.kyori:adventure-text-serializer-plain:4.13.1"
+    shadow "net.kyori:adventure-text-serializer-plain:4.13.1"
+
+    implementation "net.kyori:adventure-text-serializer-legacy:4.13.1"
+    shadow "net.kyori:adventure-text-serializer-legacy:4.13.1"
+
+    implementation "net.kyori:adventure-text-serializer-gson:4.13.1"
+    shadow "net.kyori:adventure-text-serializer-gson:4.13.1"
+
+    implementation "com.destroystokyo.paper:paper-api:${bukkit_version}"
     implementation "de.maxhenkel.voicechat:voicechat-api:${voicechat_api_version}"
 
-    compileOnly group: "com.comphenix.protocol", name: "ProtocolLib", version: "4.8.0";
+    compileOnly group: "com.comphenix.protocol", name: "ProtocolLib", version: "5.0.0";
+    compileOnly("de.tr7zw:item-nbt-api-plugin:2.11.2")
 
+    compileOnly 'org.codehaus.plexus:plexus-utils:4.0.0'
 }
 
 repositories {
@@ -55,12 +70,16 @@ repositories {
         url = uri("https://papermc.io/repo/repository/maven-public/")
     }
     maven { url "https://repo.dmulloy2.net/repository/public/" }
+    maven {
+        name = "CodeMC"
+        url = uri("https://repo.codemc.io/repository/maven-public/")
+    }
     mavenLocal()
 }
 
 shadowJar {
     configurations = [project.configurations.shadow]
-    classifier 'shadow-dev'
+    classifier 'all'
     //relocate 'javazoom', "me.navoei.${mod_id}.javazoom"
     //relocate 'org.tritonus', "me.navoei.${mod_id}.tritonus"
 }
