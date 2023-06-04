@@ -23,11 +23,15 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.material.MaterialData;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.metadata.MetadataValue;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -77,7 +81,11 @@ public class JukeBox implements Listener{
 
                     assert VoicePlugin.voicechatServerApi != null;
 
-                    /*NBT.modify(event.getClickedBlock().getState(), data -> {
+                    MaterialData materialData = event.getItem().getData();
+                    MetadataValue fileMetadata = new FixedMetadataValue(customDiscs, soundFileName);
+                    jukebox.setMetadata("customdiscs", fileMetadata);
+
+                    /*NBT.modify(jukebox, data -> {
                         System.out.println("Jukebox NBT: " + data.toString());
                         ReadWriteNBT jukeboxNBT = data.getOrCreateCompound("customdiscs");
                         System.out.println("1");
@@ -128,6 +136,10 @@ public class JukeBox implements Listener{
 
             if (player.isSneaking() && !itemInvolvedInEvent.getType().equals(Material.AIR)) return;
             stopDisc(block);
+
+            Jukebox jukebox = (Jukebox) block.getState();
+
+            jukebox.removeMetadata("customdiscs", customDiscs);
         }
     }
 
@@ -140,6 +152,7 @@ public class JukeBox implements Listener{
         if (block.getType() != Material.JUKEBOX) return;
 
         stopDisc(block);
+        jukebox.removeMetadata("customdiscs", customDiscs);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -148,6 +161,8 @@ public class JukeBox implements Listener{
         for (Block explodedBlock : event.blockList()) {
             if (explodedBlock.getType() == Material.JUKEBOX) {
                 stopDisc(explodedBlock);
+                Jukebox jukebox = (Jukebox) explodedBlock.getState();
+                jukebox.removeMetadata("customdiscs", customDiscs);
             }
         }
 

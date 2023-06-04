@@ -16,10 +16,13 @@ import me.Navoei.customdiscsplugin.event.JukeBox;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bukkit.block.Jukebox;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.util.List;
 import java.util.Objects;
 
 public final class CustomDiscs extends JavaPlugin {
@@ -75,18 +78,22 @@ public final class CustomDiscs extends JavaPlugin {
 
                     if (!jukebox.isPlaying()) return;
 
-                   /* NBT.modify(jukebox, nbt -> {
-                        ReadWriteNBT customDiscs = nbt.getCompound("customdiscs");
-                        if (customDiscs == null) return;
+                    List<MetadataValue> values = jukebox.getMetadata("customdiscs");
+                    System.out.println(values);
 
-                        if(customDiscs.hasTag("customdiscs")) {
-                            event.setCancelled(true);
-                            ParticleManager.start(jukebox);
-                        }
-                    });*/
+                    if (values.isEmpty()) return;
 
                     event.setCancelled(true);
                     ParticleManager.start(jukebox);
+
+                   /*NBT.modify(jukebox, nbt -> {
+                        String customDiscs = nbt.getString("customdiscs");
+                        System.out.println(customDiscs);
+                        if (customDiscs == null) return;
+
+                       event.setCancelled(true);
+                       ParticleManager.start(jukebox);
+                    });*/
                 }
             }
         });
