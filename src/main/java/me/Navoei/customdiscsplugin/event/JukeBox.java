@@ -152,6 +152,7 @@ public class JukeBox implements Listener{
         if (block.getType() != Material.JUKEBOX) return;
 
         stopDisc(block);
+        Jukebox jukebox = (Jukebox) block.getState();
         jukebox.removeMetadata("customdiscs", customDiscs);
     }
 
@@ -159,7 +160,7 @@ public class JukeBox implements Listener{
     public void onJukeboxExplode(EntityExplodeEvent event) {
 
         for (Block explodedBlock : event.blockList()) {
-            if (explodedBlock.getType() == Material.JUKEBOX) {
+            if (explodedBlock.getType() != Material.JUKEBOX) return;
                 stopDisc(explodedBlock);
                 Jukebox jukebox = (Jukebox) explodedBlock.getState();
                 jukebox.removeMetadata("customdiscs", customDiscs);
